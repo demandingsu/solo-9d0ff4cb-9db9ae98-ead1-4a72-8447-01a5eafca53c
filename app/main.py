@@ -1,4 +1,5 @@
-"""FastAPI application: event ingestion, visit-path queries, withdrawal."""
+"""FastAPI application: event ingestion, visit-path queries, withdrawal,
+and legacy catalog-card retrieval (旧卡检索)."""
 from __future__ import annotations
 
 import sqlite3
@@ -9,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from . import crud
 from .db import get_connection, init_db, write_transaction
+from .legacy import router as legacy_router
 from .models import (
     ErrorResponse,
     EventBatchIn,
@@ -33,10 +35,14 @@ app = FastAPI(
     description=(
         "从浏览器 open/close 事件还原观众实际参观路径。"
         "支持事件重传去重、乱序补报、缺关闭标记停留未知，以及数据同意撤回。"
+        "另提供旧卡检索：按批次+卡号录入品名字码序列，批次对照表整表更换，"
+        "凭批次+卡号查原码与未映射位置，按完整品名查同名卡。"
     ),
-    version="1.0.0",
+    version="1.1.0",
     lifespan=lifespan,
 )
+
+app.include_router(legacy_router)
 
 
 @app.exception_handler(crud.BadEventTime)

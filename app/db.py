@@ -41,6 +41,55 @@ CREATE TABLE IF NOT EXISTS withdrawals (
     visitor_id  TEXT    NOT NULL PRIMARY KEY,
     withdrawn_at TEXT   NOT NULL
 );
+
+-- ---- 旧卡检索（legacy catalog cards） ----
+
+-- 原始登记卡：品名以四位十六进制字码序列原样保存（JSON 数组）。
+CREATE TABLE IF NOT EXISTS legacy_cards (
+    batch_id    TEXT    NOT NULL,
+    card_no     TEXT    NOT NULL,
+    codes       TEXT    NOT NULL,
+    created_at  TEXT    NOT NULL,
+    updated_at  TEXT    NOT NULL,
+    PRIMARY KEY (batch_id, card_no)
+);
+
+-- 字码倒排：换表时按变动字码精确找出需要重建的卡，避免全批扫描。
+CREATE TABLE IF NOT EXISTS legacy_card_codes (
+    batch_id TEXT    NOT NULL,
+    card_no  TEXT    NOT NULL,
+    position INTEGER NOT NULL,
+    code     TEXT    NOT NULL,
+    PRIMARY KEY (batch_id, card_no, position)
+);
+CREATE INDEX IF NOT EXISTS idx_legacy_card_codes_code
+    ON legacy_card_codes (batch_id, code);
+
+-- 对照表版本历史；每批至多一张 active 表（部分唯一索引保证）。
+CREATE TABLE IF NOT EXISTS legacy_mapping_tables (
+    batch_id   TEXT    NOT NULL,
+    version    INTEGER NOT NULL,
+    entries    TEXT    NOT NULL,
+    created_at TEXT    NOT NULL,
+    active     INTEGER NOT NULL DEFAULT 0 CHECK (active IN (0, 1)),
+    PRIMARY KEY (batch_id, version)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_legacy_mapping_active
+    ON legacy_mapping_tables (batch_id) WHERE active = 1;
+
+-- 派生转写索引：与对照表在同一事务内重建，读者不会看到表/索引错位。
+CREATE TABLE IF NOT EXISTS legacy_card_index (
+    batch_id      TEXT    NOT NULL,
+    card_no       TEXT    NOT NULL,
+    texts         TEXT    NOT NULL,
+    full_name     TEXT,
+    complete      INTEGER NOT NULL CHECK (complete IN (0, 1)),
+    unmapped      TEXT    NOT NULL,
+    table_version INTEGER,
+    PRIMARY KEY (batch_id, card_no)
+);
+CREATE INDEX IF NOT EXISTS idx_legacy_card_index_name
+    ON legacy_card_index (full_name) WHERE complete = 1;
 """
 
 
