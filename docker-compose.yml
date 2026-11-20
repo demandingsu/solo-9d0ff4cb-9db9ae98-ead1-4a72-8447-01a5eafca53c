@@ -1,0 +1,22 @@
+services:
+  api:
+    build: .
+    image: exhibition-paths-api:latest
+    container_name: exhibition-paths-api
+    ports:
+      - "8000:8000"
+    environment:
+      EXHIBITION_DB: /data/exhibition.db
+      EXHIBITION_BUSY_TIMEOUT_MS: "5000"
+    volumes:
+      - exhibition-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  exhibition-data:

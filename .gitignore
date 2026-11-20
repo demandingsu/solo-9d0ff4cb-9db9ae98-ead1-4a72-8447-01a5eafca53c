@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Local dependency install used inside the sandbox
+.pylibs/
+.venv/
+
+# Local SQLite data (container uses the named Docker volume instead)
+.rundata/
+*.db
+*.db-wal
+*.db-shm
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
